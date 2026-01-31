@@ -109,20 +109,19 @@ parsers: # array
          - 🇺🇸美国
          - 👨‍🎤其他
 
-      - name: 🤖OpenAI
+      # AI 相关：仅手动选择（select），避免自动优选导致“频繁切换节点”
+      - name: 🤖AI
         type: select
         proxies:
-         - 🚀URL-TEST
-         - 🎛LOAD-BALANCE
-         - 🕹Fallback
          - 👆SELECT
+         - 🥷PROXY
          - DIRECT
-         - 🇭🇰香港
-         - 🐳台湾
+         - 🇺🇸美国
          - 🇯🇵日本
          - 🇸🇬新加坡
          - 🇰🇷韩国
-         - 🇺🇸美国
+         - 🇭🇰香港
+         - 🐳台湾
          - 👨‍🎤其他
 
       - name: 🔍Bing
@@ -293,36 +292,84 @@ parsers: # array
         
   # 添加规则
       prepend-rules: # 规则由上往下遍历，如上面规则已经命中，则不再往下处理
+        # === 常见广告域名拦截（对 YouTube “去广告”能力有限，但可拦截一部分 Google/YouTube 广告与投放域名）===
+        - DOMAIN,googleads.g.doubleclick.net,🚦AD
+        - DOMAIN,pagead2.googlesyndication.com,🚦AD
+        - DOMAIN,pubads.g.doubleclick.net,🚦AD
+        - DOMAIN,securepubads.g.doubleclick.net,🚦AD
+        - DOMAIN,adservice.google.com,🚦AD
+        - DOMAIN,ads.youtube.com,🚦AD
+        - DOMAIN-SUFFIX,doubleclick.net,🚦AD
+        - DOMAIN-SUFFIX,googlesyndication.com,🚦AD
+        - DOMAIN-SUFFIX,googleadservices.com,🚦AD
+
+        # === AI 相关统一走手动策略组（避免自动优选导致频繁切换）===
+        - RULE-SET,openai,🤖AI
+        - DOMAIN,gemini.google.com,🤖AI
+        - DOMAIN-SUFFIX,claude.ai,🤖AI
+        - DOMAIN-SUFFIX,anthropic.com,🤖AI
+        - DOMAIN-SUFFIX,chatgpt.com,🤖AI
+        - DOMAIN-SUFFIX,openai.com,🤖AI
+        - DOMAIN-SUFFIX,oaistatic.com,🤖AI
+        - DOMAIN-SUFFIX,oaiusercontent.com,🤖AI
+        - DOMAIN-SUFFIX,openrouter.ai,🤖AI
+        - DOMAIN-SUFFIX,perplexity.ai,🤖AI
+        - DOMAIN-SUFFIX,poe.com,🤖AI
+        - DOMAIN-KEYWORD,cursor,🤖AI
+        - DOMAIN-SUFFIX,cursor.com,🤖AI
+
+        # === 常用服务分流 ===
         - DOMAIN-SUFFIX,jdev.tw,🥷PROXY
         - DOMAIN-SUFFIX,omnivore.app,🥷PROXY
+        - DOMAIN-SUFFIX,python.org,🥷PROXY
+        - DOMAIN-SUFFIX,keil.com,🥷PROXY
+        - DOMAIN-SUFFIX,shimano.com,🇯🇵日本
+        - DOMAIN-KEYWORD,adobe,REJECT
+
+        # === 国内服务直连 ===
+        - DOMAIN-SUFFIX,aliyun.com,DIRECT
+        - DOMAIN-SUFFIX,gitee.com,DIRECT
+        - DOMAIN-SUFFIX,cn,DIRECT
+        - DOMAIN-SUFFIX,tsinghua.edu.cn,DIRECT
+        - DOMAIN-SUFFIX,ustc.edu.cn,DIRECT
+
+        # === Clash 面板直连 ===
+        - DOMAIN,clash.razord.top,DIRECT
+        - DOMAIN,yacd.haishan.me,DIRECT
+
+        # === RULE-SET 规则 ===
         - RULE-SET,youtube,🎎YouTube
         - RULE-SET,netflix,📽Netflix
-        - RULE-SET,openai,🤖OpenAI
         - RULE-SET,bing,🔍Bing
         - RULE-SET,bilibiliintl,🛀Bilibiliintl
         - RULE-SET,twitter,🦤Twitter
         - RULE-SET,github,🐈GitHub
         - RULE-SET,applications,DIRECT
-        - DOMAIN,clash.razord.top,DIRECT
-        - DOMAIN,yacd.haishan.me,DIRECT
         - RULE-SET,private,DIRECT
+        - RULE-SET,adblock,🚦AD
+        - RULE-SET,AD,🚦AD
+        - RULE-SET,EasyList,🚦AD
+        - RULE-SET,EasyListChina,🚦AD
+        - RULE-SET,EasyPrivacy,🚦AD
+        - RULE-SET,ProgramAD,🚦AD
         - RULE-SET,reject,🚦AD
-        - RULE-SET,icloud,DIRECT #
-        - RULE-SET,apple,DIRECT # 这三个为国内可直连地址，如果希望走代理改为🥷PROXY
-        - RULE-SET,google,🚅Google # 
-        - RULE-SET,googledrive,🚅Google # 
-        - RULE-SET,googlesearch,🚅Google # 
+        - RULE-SET,icloud,DIRECT
+        - RULE-SET,apple,DIRECT # 国内可直连，如需走代理改为 🥷PROXY
+        - RULE-SET,google,🚅Google
+        - RULE-SET,googledrive,🚅Google
+        - RULE-SET,googlesearch,🚅Google
         - RULE-SET,tld-not-cn,🥷PROXY
         - RULE-SET,gfw,🥷PROXY
         - RULE-SET,greatfire,🥷PROXY
         - RULE-SET,telegramcidr,🥷PROXY
         - RULE-SET,lancidr,DIRECT
         - RULE-SET,cncidr,DIRECT
+        - GEOIP,LAN,DIRECT
         - GEOIP,,DIRECT
         - GEOIP,CN,DIRECT
         - RULE-SET,direct,DIRECT
         - RULE-SET,proxy,🥷PROXY
-        - MATCH,👆SELECT # ⭐️⭐️规则之外的，在这里来修改是白名单模式还是黑名单模式，具体在“👆SELECT”选择代理或直连。
+        - MATCH,👆SELECT # ⭐️规则之外的，在此修改白名单/黑名单模式
 
       # 添加规则集
         # DOMAIN-SUFFIX：域名后缀匹配
@@ -339,7 +386,50 @@ parsers: # array
 
   # 添加规则集
       mix-rule-providers: 
-        reject: # 广告域名列表
+        # REIJI007 增强去广告：约15万条规则，107个广告过滤器来源，每20分钟更新（使用 jsDelivr CDN 加速）
+        # 参考：https://github.com/REIJI007/AdBlock_Rule_For_Clash
+        adblock:
+          type: http
+          behavior: domain
+          format: yaml
+          url: "https://cdn.jsdelivr.net/gh/REIJI007/AdBlock_Rule_For_Clash@main/adblock_reject.yaml"
+          path: ./ruleset/adblock_reject.yaml
+          interval: 1200
+
+        # earoftoast 去广告：ACL4SSR 数据源，适用于 mihomo（使用 jsDelivr CDN 加速）
+        # 参考：https://github.com/earoftoast/clash-rules
+        AD:
+          type: http
+          behavior: domain
+          url: "https://cdn.jsdelivr.net/gh/earoftoast/clash-rules@main/AD.yaml"
+          path: ./ruleset/earoftoast_AD.yaml
+          interval: 86400
+        EasyList:
+          type: http
+          behavior: domain
+          url: "https://cdn.jsdelivr.net/gh/earoftoast/clash-rules@main/EasyList.yaml"
+          path: ./ruleset/earoftoast_EasyList.yaml
+          interval: 86400
+        EasyListChina:
+          type: http
+          behavior: domain
+          url: "https://cdn.jsdelivr.net/gh/earoftoast/clash-rules@main/EasyListChina.yaml"
+          path: ./ruleset/earoftoast_EasyListChina.yaml
+          interval: 86400
+        EasyPrivacy:
+          type: http
+          behavior: domain
+          url: "https://cdn.jsdelivr.net/gh/earoftoast/clash-rules@main/EasyPrivacy.yaml"
+          path: ./ruleset/earoftoast_EasyPrivacy.yaml
+          interval: 86400
+        ProgramAD:
+          type: http
+          behavior: domain
+          url: "https://cdn.jsdelivr.net/gh/earoftoast/clash-rules@main/ProgramAD.yaml"
+          path: ./ruleset/earoftoast_ProgramAD.yaml
+          interval: 86400
+
+        reject: # Loyalsoldier 广告域名列表（基础）
           type: http
           behavior: domain
           url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
@@ -454,7 +544,7 @@ parsers: # array
         netflix: # 奈飞的分流规则
           type: http
           behavior: classical
-          url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Clash/Netflix/Netflix.yaml"
+          url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@release/rule/Clash/Netflix/Netflix.yaml"
           path: ./ruleset/netflix.yaml
           interval: 86400
 
@@ -486,16 +576,16 @@ parsers: # array
           path: ./ruleset/bilibiliintl.yaml
           interval: 86400    
 
-        twitter: # twitter的分流规则
+        twitter: # Twitter的分流规则
           type: http
           behavior: classical
           url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml"
           path: ./ruleset/twitter.yaml
           interval: 86400    
 
-        github: # github的分流规则
+        github: # GitHub的分流规则
           type: http
           behavior: classical
           url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml"
           path: ./ruleset/github.yaml
-          interval: 86400    
+          interval: 86400
